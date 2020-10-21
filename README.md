@@ -13,3 +13,26 @@ previous version. The deleted objects from a version enabled bucket can be resto
 owner or the user who created the bucket.
 
 ## Install
+
+### Use Released Binaries
+
+Download the latest release from here.
+
+### Compile from Source
+
+To compile `s3-restore` from source you'll need a working Golang dev environment,
+to setup follow these [instructions](https://golang.org/doc/install).
+
+Clone the repo and run `go-build` to generate the binary.
+
+### Docker
+
+You can run `s3-restore` with Docker:
+
+```
+docker run \
+    --rm -it \
+    -v /home/user/.aws:/home/aws-nuke/.aws \
+    ashrithr/s3-restore:latest \
+    --help
+```
