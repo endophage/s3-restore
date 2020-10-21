@@ -1,9 +1,8 @@
 name: Release Build Files
 
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
 
 jobs:
   goreleaser:
