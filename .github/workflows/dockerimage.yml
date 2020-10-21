@@ -1,0 +1,23 @@
+name: Docker Image
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Login to DockerHub Registry
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      - name: Get the version
+        id: vars
+        run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
+      - name: Build the tagged Docker image
+        run: docker build . --file Dockerfile --tag ashrithr/s3-restore:${{steps.vars.outputs.tag}} --tag ashrithr/s3-restore:latest
+      - name: Push the version tagged Docker image
+        run: docker push ashrithr/nuker:${{steps.vars.outputs.tag}}
+      - name: Push the latest tagged Docker image
+        run: docker push ashrithr/nuker:latest
