@@ -18,6 +18,6 @@ jobs:
       - name: Build the tagged Docker image
         run: docker build . --file Dockerfile --tag ashrithr/s3-restore:${{steps.vars.outputs.tag}} --tag ashrithr/s3-restore:latest
       - name: Push the version tagged Docker image
-        run: docker push ashrithr/nuker:${{steps.vars.outputs.tag}}
+        run: docker push ashrithr/s3-restore:${{steps.vars.outputs.tag}}
       - name: Push the latest tagged Docker image
-        run: docker push ashrithr/nuker:latest
+        run: docker push ashrithr/s3-restore:latest
