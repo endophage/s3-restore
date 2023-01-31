@@ -15,6 +15,7 @@ var (
 	prefix  string
 	region  string
 	dryrun  bool
+	since   string
 )
 
 // rootCmd represents the base command when called without any subcommands

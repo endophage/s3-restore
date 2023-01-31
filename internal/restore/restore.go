@@ -2,6 +2,7 @@ package restore
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -18,19 +19,56 @@ func createS3Client(region string) *s3.S3 {
 }
 
 // ObjsUingCopy - Restores objects by copying previous versions of the objects.
-func ObjsUingCopy(bucket string, prefix string, region string, dstBucket string, dstPrefix string, dryrun bool) {
+func ObjsUingCopy(bucket string, prefix string, region string, dstBucket string, dstPrefix string, dryrun bool, sinceRaw string) {
 	log.Infof("Restoring objects by copying previous versions of the objects.")
 
+	since, err := time.Parse("2006-01-02", sinceRaw)
+	if err != nil {
+		if sinceRaw == "" {
+			log.Infoln("Empty since value, assuming epoch")
+			since = time.Time{}
+		} else {
+			log.Fatalln("Invalid since value: ", err)
+		}
+	}
 	svc := createS3Client(region)
 	vers, dels := getObjectVersions(svc, bucket, prefix)
 	objs := make([]s3.ObjectVersion, 0)
 
+	latestVersions := make(map[string]s3.ObjectVersion)
 	for _, ver := range *vers {
-		for _, del := range *dels {
-			if *ver.Key == *del.Key {
-				findOrInsertObj(&objs, &ver)
+		if *ver.IsLatest {
+			// If a non-deleted version is already the latest, there's nothing to restore
+			continue
+		}
+		key := *ver.Key
+		tmp, ok := latestVersions[key]
+		if ok {
+			if tmp.LastModified.After(*ver.LastModified) {
+				// The version in our map is more recent than the one we're iterating. Keep the one
+				// we have by continuing and skipping the assignment at the end of the list.
+				continue
 			}
 		}
+		latestVersions[*ver.Key] = ver
+	}
+
+	for _, del := range *dels {
+		if !*del.IsLatest {
+			// If the delete marker isn't the latest version, we don't need to restore
+			continue
+		}
+		if del.LastModified.Before(since) {
+			// delete marker is earlier than our specified cutoff. Do not restore
+			continue
+		}
+		key := *del.Key
+		obj, ok := latestVersions[key]
+		if !ok {
+			log.Errorf("Did not find a version to restore for key %s", key)
+			continue
+		}
+		objs = append(objs, obj)
 	}
 
 	for _, obj := range objs {
@@ -136,22 +174,4 @@ func deleteVersionedObj(svc *s3.S3, bucket string, key string, vid string, dryru
 		}
 	}
 
-}
-
-func findOrInsertObj(objs *[]s3.ObjectVersion, obj *s3.ObjectVersion) {
-	objExists := false
-
-	for i, o := range *objs {
-		if *obj.Key == *o.Key {
-			objExists = true
-
-			if (*obj.LastModified).After(*o.LastModified) {
-				(*objs)[i] = *obj
-			}
-		}
-	}
-
-	if !objExists {
-		*objs = append(*objs, *obj)
-	}
 }

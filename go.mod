@@ -1,4 +1,4 @@
-module github.com/ashrithr/s3-restore
+module github.com/endophage/s3-restore
 
 go 1.15
 

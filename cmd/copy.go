@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/ashrithr/s3-restore/internal/restore"
+	"github.com/endophage/s3-restore/internal/restore"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +22,8 @@ var copyObjCmd = &cobra.Command{
 		dstBucket, _ = cmd.Flags().GetString("dstBucket")
 		dstPrefix, _ = cmd.Flags().GetString("dstPrefix")
 		dryrun, _ = cmd.Flags().GetBool("dryrun")
-
-		restore.ObjsUingCopy(bucket, prefix, region, dstBucket, dstPrefix, dryrun)
+		since, _ = cmd.Flags().GetString("since")
+		restore.ObjsUingCopy(bucket, prefix, region, dstBucket, dstPrefix, dryrun, since)
 	},
 }
 
